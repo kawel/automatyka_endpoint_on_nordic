@@ -33,6 +33,8 @@ SRC_FILES += \
   $(PROJ_DIR)/ep_cfg.c \
   $(PROJ_DIR)/ep_udp.c \
   $(PROJ_DIR)/ep_bsp.c \
+  $(PROJ_DIR)/ep_coap.c \
+  $(PROJ_DIR)/version/version.c \
   $(SDK_ROOT)/external/segger_rtt/RTT_Syscalls_GCC.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
@@ -46,6 +48,7 @@ SRC_FILES += \
 INC_FOLDERS += \
   $(SDK_ROOT)/components/drivers_nrf/common \
   $(PROJ_DIR) \
+  $(PROJ_DIR)/version \
   $(SDK_ROOT)/components/libraries/log \
   $(SDK_ROOT)/external/nrf_cc310/include \
   $(SDK_ROOT)/components/device \
@@ -96,6 +99,7 @@ CFLAGS += -DNFC_NDEF_RECORD_PARSER_ENABLED=1
 CFLAGS += -DSWI_DISABLE0
 CFLAGS += -DUART_ENABLED=0
 CFLAGS += -D__HEAP_SIZE=0
+CFLAGS += -DVER_PROG_NAME=prototyp
 CFLAGS += -mcpu=cortex-m4
 CFLAGS += -mthumb -mabi=aapcs
 CFLAGS +=  -Wall -O3 -g3
@@ -127,7 +131,7 @@ LDFLAGS += -Wl,--gc-sections
 LDFLAGS += --specs=nano.specs -lc -lnosys
 
 
-.PHONY: $(TARGETS) default all clean help flash 
+.PHONY: $(TARGETS) default all clean help flash
 
 # Default target - first one defined
 default: nrf52840_xxaa
@@ -141,6 +145,12 @@ TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 
 include $(TEMPLATE_PATH)/Makefile.common
 
+# Quick workaround for generation of the version_gen.h file required by version.c
+$(OUTPUT_DIRECTORY)/nrf52840_xxaa_version.c.o: version_gen.h
+
+version_gen.h:
+	../tools/gen_sw_ver.sh
+
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
 # Flash the program
@@ -151,3 +161,4 @@ flash: $(OUTPUT_DIRECTORY)/nrf52840_xxaa.hex
 
 erase:
 	nrfjprog --snr 683377493 --eraseall -f nrf52
+	
