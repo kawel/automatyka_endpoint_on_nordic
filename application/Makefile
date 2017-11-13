@@ -33,7 +33,7 @@ SRC_FILES += \
   $(PROJ_DIR)/ep_cfg.c \
   $(PROJ_DIR)/ep_udp.c \
   $(PROJ_DIR)/ep_bsp.c \
-  $(PROJ_DIR)/ep_res.c \
+  $(PROJ_DIR)/ep_coap.c \
   $(SDK_ROOT)/external/segger_rtt/RTT_Syscalls_GCC.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \

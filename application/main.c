@@ -6,6 +6,7 @@
  */
 
 #include <assert.h>
+#include <ep_coap.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -13,8 +14,6 @@
 #include "ep_cfg.h"
 #include "ep_udp.h"
 #include "ep_bsp.h"
-#include "ep_res.h"
-
 #include "app_timer.h"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -85,7 +84,7 @@ int main(void)
 
     ep_bsp_init(ot_instance);
     ep_cfg_init();
-    ep_res_init(ot_instance);
+    ep_coap_init(ot_instance);
     ep_udp_start(ot_instance);
 
     while (true)

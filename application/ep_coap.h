@@ -1,13 +1,13 @@
 /**
- * @file ep_res.h
+ * @file ep_coap.h
  * @author Pawel Radecki
  * @date 13 Nov 2017
  * @brief File defines interface to register resources on the End Point.
  *
  */
 
-#ifndef EP_RES_H_
-#define EP_RES_H_
+#ifndef EP_COAP_H_
+#define EP_COAP_H_
 
 #include <openthread/openthread.h>
 
@@ -15,10 +15,10 @@
 extern "C" {
 #endif
 
-int ep_res_init(otInstance *aInstance);
+int ep_coap_init(otInstance *aInstance);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* EP_RES_H_ */
+#endif /* EP_COAP_H_ */

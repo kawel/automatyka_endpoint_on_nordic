@@ -1,14 +1,15 @@
 /**
- * @file ep_res.c
+ * @file ep_coap.c
  * @author Pawel Radecki
  * @date 13 Nov 2017
  *
  */
 
+#include "ep_coap.h"
+
 #include <string.h>
 #include <stdio.h>
 
-#include "ep_res.h"
 #include "utils.h"
 //#include "version.h" // TODO: not present right now stub it
 
@@ -58,35 +59,35 @@ static otCoapResource res_version = {
     .mHandler = req_hdl_version,
 };
 
-int ep_res_init(otInstance *aInstance)
+int ep_coap_init(otInstance *aInstance)
 {
-    NRF_LOG_INFO("EP resources: Register all\r\n");
+    NRF_LOG_INFO("EP CoAP: add resources and start server\r\n");
 
     // add resources to the server
     res_output.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_output));
-    NRF_LOG_INFO("EP resources: output added\r\n");
+    NRF_LOG_INFO("EP CoAP: output added\r\n");
 
     res_input.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_input));
-    NRF_LOG_INFO("EP resources: input added\r\n");
+    NRF_LOG_INFO("EP CoAP: input added\r\n");
 
     res_status.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_status));
-    NRF_LOG_INFO("EP resources: status added\r\n");
+    NRF_LOG_INFO("EP CoAP: status added\r\n");
 
     res_version.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_version));
-    NRF_LOG_INFO("EP resources: version added\r\n");
+    NRF_LOG_INFO("EP CoAP: version added\r\n");
 
     // start server
     SuccessOrExit(otCoapStart(aInstance, OT_DEFAULT_COAP_PORT));
-    NRF_LOG_INFO("EP resources: CoAP Started\r\n");
+    NRF_LOG_INFO("EP CoAP: Started\r\n");
 
     return 0;
 
 exit:
-    NRF_LOG_INFO("EP resources: Register Failed\r\n");
+    NRF_LOG_INFO("EP CoAP: Failed\r\n");
     return -1;
 }
 
@@ -305,11 +306,11 @@ static void send_response(void *aContext, otCoapHeader *aHeader, const otMessage
 exit:
     if (error != OT_ERROR_NONE && responseMessage != NULL)
     {
-        // Cannot send CoAP response message
+        NRF_LOG_INFO("EP resources: send response Failed\r\n");
         otMessageFree(responseMessage);
     }
     else if (responseCode >= OT_COAP_CODE_RESPONSE_MIN)
     {
-        // CoAP response sent successfully!
+        NRF_LOG_INFO("EP resources: response sent successfully\r\n");
     }
 }
