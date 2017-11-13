@@ -11,7 +11,7 @@
 #include <stdio.h>
 
 #include "utils.h"
-//#include "version.h" // TODO: not present right now stub it
+#include "version.h"
 
 #include "nrf_log.h"
 #include "boards.h"
@@ -209,12 +209,6 @@ static void req_hdl_status(void *aContext, otCoapHeader *aHeader, otMessage *aMe
 
 static void prepare_version_data(char *buffer)
 {
-    static char *version_data = "prototyp 1234abc Nov 13 2017 04:48:23";
-
-    // TODO: Add Version module and activate using it.
-    memcpy(buffer, version_data, strlen(version_data) + 1);
-
-#if 0
     size_t len_prog_name, len_sw_rev, len_time, len_date;
     int offset = 0;
 
@@ -231,7 +225,6 @@ static void prepare_version_data(char *buffer)
     buffer[offset++] = ' ';
     offset += VER_get_compilation_time(&buffer[offset], len_time);
     buffer[offset++] = '\0';
-#endif
 }
 
 static void req_hdl_version(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo)
