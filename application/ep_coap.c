@@ -18,7 +18,7 @@
 
 #include <openthread/coap.h>
 
-
+static void req_hdl_default(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 static void req_hdl_input(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 static void req_hdl_status(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
@@ -80,6 +80,9 @@ int ep_coap_init(otInstance *aInstance)
     SuccessOrExit(otCoapAddResource(aInstance, &res_version));
     NRF_LOG_INFO("EP CoAP: version added\r\n");
 
+    otCoapSetDefaultHandler(aInstance, req_hdl_default, NULL);
+    NRF_LOG_INFO("EP CoAP: default handler added\r\n");
+
     // start server
     SuccessOrExit(otCoapStart(aInstance, OT_DEFAULT_COAP_PORT));
     NRF_LOG_INFO("EP CoAP: Started\r\n");
@@ -92,7 +95,17 @@ exit:
 }
 
 
-void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+static void req_hdl_default(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo)
+{
+    (void)aContext;
+    (void)aHeader;
+    (void)aMessage;
+    (void)aMessageInfo;
+
+    NRF_LOG_INFO("Received CoAP message that does not match any request or resource\r\n");
+}
+
+static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
     uint8_t led_state = 0;
 
