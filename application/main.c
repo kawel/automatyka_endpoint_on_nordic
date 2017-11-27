@@ -97,7 +97,7 @@
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 
 #define APP_ADV_INTERVAL                200                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
-#define APP_ADV_TIMEOUT_IN_SECONDS      180                                         /**< The advertising timeout (in units of seconds). */
+#define APP_ADV_TIMEOUT_IN_SECONDS      30                                          /**< The advertising timeout (in units of seconds). */
 
 #define MIN_CONN_INTERVAL               MSEC_TO_UNITS(50, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
 #define MAX_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)            /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
@@ -120,10 +120,14 @@ static ble_lbs_t                        m_lbs;                                  
 
 static nrf_ble_gatt_t                   m_gatt;                                     /**< GATT module instance. */
 static uint16_t                         m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3;  /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
-
-
+static bool                             adv_state_on;                               /**< Status indicating that advertising is turned on. */
+static bool                             conn_state_on;                              /**< Status indicating that device is connected. */
 
 static otInstance *ot_instance = NULL;
+
+
+static void advertising_stopped(void);
+
 
 
 /**@brief Function for assert macro callback.
@@ -302,12 +306,16 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
+        	adv_state_on = true;
+        	NRF_LOG_INFO("Advertising start\r\n");
+        	adv_state_on = true;        	
             err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
             APP_ERROR_CHECK(err_code);
             break;
         case BLE_ADV_EVT_IDLE:
-            err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-            APP_ERROR_CHECK(err_code);
+			advertising_stopped();				
+//            err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+//            APP_ERROR_CHECK(err_code);
             break;
         default:
             break;
@@ -329,6 +337,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
             APP_ERROR_CHECK(err_code);
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
+            conn_state_on = true;
+            advertising_stopped();
 
             NRF_LOG_INFO("Connected\r\n");
             break; // BLE_GAP_EVT_CONNECTED
@@ -337,6 +347,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             err_code = bsp_indication_set(BSP_INDICATE_IDLE);
             APP_ERROR_CHECK(err_code);
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
+            conn_state_on = false;
             NRF_LOG_INFO("Disconnected\r\n");
             break; // BLE_GAP_EVT_DISCONNECTED
 
@@ -568,6 +579,17 @@ static void advertising_init(void)
     ble_advertising_conn_cfg_tag_set(CONN_CFG_TAG);
 }
 
+
+/**@brief Function called when advertising is stopped.
+ */
+static void advertising_stopped(void)
+{
+	NRF_LOG_INFO("Advertising end\r\n");
+    bsp_board_led_off(ADVERTISING_LED);
+	adv_state_on = false;
+}
+
+
 /**@brief Function for initializing the nrf log module.
  */
 static void log_init(void)
@@ -634,6 +656,12 @@ static void bsp_event_handler(bsp_event_t event)
     switch (event)
     {
         case BSP_EVENT_KEY_0:
+			NRF_LOG_INFO("Button pushed.\r\n");
+			if((adv_state_on == false) && (conn_state_on == false))
+			{
+			    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
+			    APP_ERROR_CHECK(err_code);
+			}
             ex_light_unicast();
             break;
 
