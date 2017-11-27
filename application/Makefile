@@ -53,6 +53,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/softdevice/common/softdevice_handler/softdevice_handler.c \
   $(SDK_ROOT)/components/nfc/t4t_lib/hal_t4t/hal_nfc_t4t.c \
   $(SDK_ROOT)/components/nfc/ndef/generic/record/nfc_ndef_record.c \
+  $(SDK_ROOT)/components/ble/ble_services/ble_lbs/ble_lbs.c \
   $(SDK_ROOT)/components/nfc/ndef/parser/record/nfc_ndef_record_parser.c \
   
 # Include folders common to all targets
@@ -246,19 +247,21 @@ TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 
 include $(TEMPLATE_PATH)/Makefile.common
 
-# Quick workaround for generation of the version_gen.h file required by version.c
-$(OUTPUT_DIRECTORY)/nrf52840_xxaa_version.c.o: version_gen.h
+##Quick workaround for generation of the version_gen.h file required by version.c
+# $(OUTPUT_DIRECTORY)/nrf52840_xxaa_version.c.o: version_gen.h
 
-version_gen.h:
-	../tools/gen_sw_ver.sh
+# version_gen.h:
+	# ../tools/gen_sw_ver.sh
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
 # Flash the program
 flash: $(OUTPUT_DIRECTORY)/nrf52840_xxaa.hex
 	@echo Flashing: $<
-	nrfjprog --snr 683022754 --program $< -f nrf52 --sectorerase
-	nrfjprog --snr 683022754 --reset -f nrf52
+	nrfjprog --program $< -f nrf52 --sectorerase
+	nrfjprog --reset -f nrf52
+#       nrfjprog --snr 683377493 --program $< -f nrf52 --sectorerase
+#       nrfjprog --snr 683377493 --reset -f nrf52
 
 # Flash softdevice
 flash_softdevice:
@@ -267,5 +270,7 @@ flash_softdevice:
 	nrfjprog --reset -f nrf52
 
 erase:
-	nrfjprog --snr 683022754 --eraseall -f nrf52
+	nrfjprog --eraseall -f nrf52
+#       nrfjprog --snr 683377493 --eraseall -f nrf52
+
 	

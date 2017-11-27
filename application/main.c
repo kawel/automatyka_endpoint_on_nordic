@@ -69,6 +69,8 @@
 #include "app_util_platform.h"
 #include "bsp.h"
 #include "bsp_btn_ble.h"
+#include "ble_lbs.h"
+
 
 #define NRF_LOG_MODULE_NAME "APP"
 #include "nrf_log.h"
@@ -91,13 +93,13 @@
 
 #define APP_FEATURE_NOT_SUPPORTED       BLE_GATT_STATUS_ATTERR_APP_BEGIN + 2        /**< Reply when unsupported features are requested. */
 
-#define DEVICE_NAME                     "Thread_UART"                               /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "Nordic_Blinky"                             /**< Name of device. Will be included in the advertising data. */
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 
 #define APP_ADV_INTERVAL                200                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS      180                                         /**< The advertising timeout (in units of seconds). */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(50, UNIT_1_25_MS)            /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(50, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
 #define MAX_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)            /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
 #define SLAVE_LATENCY                   0                                           /**< Slave latency. */
 #define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)             /**< Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units. */
@@ -105,13 +107,18 @@
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                      /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
 #define MAX_CONN_PARAMS_UPDATE_COUNT    3                                           /**< Number of attempts before giving up the connection parameter negotiation. */
 
+#define ADVERTISING_LED                 BSP_BOARD_LED_0                         	/**< Is on when device is advertising. */
+#define CONNECTED_LED                   BSP_BOARD_LED_1                       	    /**< Is on when device has connected. */
+#define LEDBUTTON_LED                   BSP_BOARD_LED_2                         	/**< LED to be toggled with the help of the LED Button Service. */
+#define LEDBUTTON_BUTTON                BSP_BUTTON_0                            	/**< Button that will trigger the notification event with the LED Button Service */
+
 #define DEAD_BEEF                       0xDEADBEEF                                  /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
 
 static ble_nus_t                        m_nus;                                      /**< Structure to identify the Nordic UART Service. */
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
+static ble_lbs_t                        m_lbs;                                      /**< LED Button Service instance. */
 
 static nrf_ble_gatt_t                   m_gatt;                                     /**< GATT module instance. */
-static ble_uuid_t                       m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
 static uint16_t                         m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3;  /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
 
 
@@ -186,18 +193,42 @@ static void nus_data_handler(ble_nus_t * p_nus, uint8_t * p_data, uint16_t lengt
 /**@snippet [Handling the data received over BLE] */
 
 
+/**@brief Function for handling write events to the LED characteristic.
+ *
+ * @param[in] p_lbs     Instance of LED Button Service to which the write applies.
+ * @param[in] led_state Written/desired state of the LED.
+ */
+static void led_write_handler(uint16_t conn_handle, ble_lbs_t * p_lbs, uint8_t led_state)
+{
+    if (led_state)
+    {
+        bsp_board_led_on(LEDBUTTON_LED);
+        NRF_LOG_INFO("Received LED ON!\r\n");
+    }
+    else
+    {
+        bsp_board_led_off(LEDBUTTON_LED);
+        NRF_LOG_INFO("Received LED OFF!\r\n");
+    }
+}
+
+
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
 {
     uint32_t       err_code;
     ble_nus_init_t nus_init;
+    ble_lbs_init_t led_init;
 
     memset(&nus_init, 0, sizeof(nus_init));
-
     nus_init.data_handler = nus_data_handler;
-
     err_code = ble_nus_init(&m_nus, &nus_init);
+    APP_ERROR_CHECK(err_code);
+            
+    memset(&led_init, 0, sizeof(led_init));
+    led_init.led_write_handler = led_write_handler;
+    err_code = ble_lbs_init(&m_lbs, &led_init);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -402,6 +433,7 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
     on_ble_evt(p_ble_evt);
     ble_advertising_on_ble_evt(p_ble_evt);
     bsp_btn_ble_on_ble_evt(p_ble_evt);
+    ble_lbs_on_ble_evt(&m_lbs, p_ble_evt);
 }
 
 
@@ -513,6 +545,7 @@ static void advertising_init(void)
     ble_advdata_t          advdata;
     ble_advdata_t          scanrsp;
     ble_adv_modes_config_t options;
+    ble_uuid_t      m_adv_uuids[] = {{LBS_UUID_SERVICE, m_lbs.uuid_type}};  /**< Universally unique service identifier. */ 
 
     // Build advertising data struct to pass into @ref ble_advertising_init.
     memset(&advdata, 0, sizeof(advdata));
