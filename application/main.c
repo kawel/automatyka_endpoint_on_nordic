@@ -85,7 +85,7 @@
 
 #include "ep_cfg.h"
 #include "ep_udp.h"
-//#include "ep_bsp.h"
+#include "ep_bsp.h"
 #include "ep_coap.h"
 #include "ex_light.h"
 
@@ -206,12 +206,12 @@ static void led_write_handler(uint16_t conn_handle, ble_lbs_t * p_lbs, uint8_t l
 {
     if (led_state)
     {
-        bsp_board_led_on(LEDBUTTON_LED);
+        ep_bsp_output_1_on();
         NRF_LOG_INFO("Received LED ON!\r\n");
     }
     else
     {
-        bsp_board_led_off(LEDBUTTON_LED);
+        ep_bsp_output_1_off();
         NRF_LOG_INFO("Received LED OFF!\r\n");
     }
 }
@@ -306,13 +306,13 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
-        	adv_state_on = true;
         	NRF_LOG_INFO("Advertising start\r\n");
         	adv_state_on = true;        	
-            err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
+            err_code = ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_ADVERTISING);
             APP_ERROR_CHECK(err_code);
             break;
         case BLE_ADV_EVT_IDLE:
+            NRF_LOG_INFO("Advertising Idle\r\n");
 			advertising_stopped();				
 //            err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
 //            APP_ERROR_CHECK(err_code);
@@ -334,7 +334,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
+            err_code = ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_CONNECTED);
             APP_ERROR_CHECK(err_code);
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             conn_state_on = true;
@@ -344,7 +344,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             break; // BLE_GAP_EVT_CONNECTED
 
         case BLE_GAP_EVT_DISCONNECTED:
-            err_code = bsp_indication_set(BSP_INDICATE_IDLE);
+            err_code = ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_IDLE);
             APP_ERROR_CHECK(err_code);
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
             conn_state_on = false;
@@ -585,7 +585,10 @@ static void advertising_init(void)
 static void advertising_stopped(void)
 {
 	NRF_LOG_INFO("Advertising end\r\n");
-    bsp_board_led_off(ADVERTISING_LED);
+	if (conn_state_on == false)
+	{
+	    ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_IDLE);
+	}
 	adv_state_on = false;
 }
 
@@ -620,11 +623,16 @@ static void handle_role_change(void * p_context, otDeviceRole role)
         case OT_DEVICE_ROLE_CHILD:
         case OT_DEVICE_ROLE_ROUTER:
         case OT_DEVICE_ROLE_LEADER:
+            ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_CONNECTED);
             break;
 
         case OT_DEVICE_ROLE_DISABLED:
+            ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_DISABLED);
+            break;
+
         case OT_DEVICE_ROLE_DETACHED:
         default:
+            ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_DETACHED);
             ex_light_set_peer_address_unspecified();
             break;
     }
@@ -670,8 +678,6 @@ static void bsp_event_handler(bsp_event_t event)
             break;
 
         case BSP_EVENT_KEY_2:
-            NRF_LOG_INFO("Thread: FACTORY RESET\r\n");
-            otInstanceFactoryReset(ot_instance);
             break;
 
         case BSP_EVENT_KEY_3:
@@ -711,7 +717,9 @@ static void buttons_leds_init(bool * p_erase_bonds)
 {
     bsp_event_t startup_event;
 
-    uint32_t err_code = bsp_init(BSP_INIT_LED | BSP_INIT_BUTTONS, bsp_event_handler);
+    ep_bsp_init();
+
+    uint32_t err_code = bsp_init(BSP_INIT_BUTTONS, bsp_event_handler);
     APP_ERROR_CHECK(err_code);
 
     err_code = bsp_btn_ble_init(NULL, &startup_event);
@@ -740,23 +748,21 @@ static void thread_init(void)
     NRF_LOG_INFO("Network name:   %s\r\n", (uint32_t)otThreadGetNetworkName(p_instance));
 
     assert(otSetStateChangedCallback(p_instance, &state_changed_callback, p_instance) == OT_ERROR_NONE);
+    assert(otIp6SetEnabled(p_instance, true) == OT_ERROR_NONE);
 
     if (otDatasetIsCommissioned(p_instance))
     {
         NRF_LOG_INFO("Active Operational Dataset: Valid network present\r\n");
+        assert(otThreadSetEnabled(p_instance, true) == OT_ERROR_NONE);
     }
     else
     {
         NRF_LOG_INFO("Active Operational Dataset: No Valid network present. Load default values.\r\n");
-        assert(otLinkSetChannel(p_instance, THREAD_CHANNEL) == OT_ERROR_NONE);
-        assert(otLinkSetPanId(p_instance, THREAD_PANID) == OT_ERROR_NONE);
+        ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_DISABLED);
     }
 
     NRF_LOG_INFO("Thread channel: %d\r\n", otLinkGetChannel(p_instance));
     NRF_LOG_INFO("Thread PANID: 0x%X\r\n", otLinkGetPanId(p_instance));
-
-    assert(otIp6SetEnabled(p_instance, true) == OT_ERROR_NONE);
-    assert(otThreadSetEnabled(p_instance, true) == OT_ERROR_NONE);
 
     ot_instance = p_instance;
 }
@@ -791,7 +797,6 @@ int main(void)
     // Thread initialization
     thread_init();
     ex_light_init(ot_instance);
-    //ep_bsp_init(ot_instance);
     ep_cfg_init();
     ep_coap_init(ot_instance);
     ep_udp_start(ot_instance);

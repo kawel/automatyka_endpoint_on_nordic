@@ -9,7 +9,7 @@
 #include "utils.h"
 
 #include "nrf_log.h"
-#include "boards.h"
+#include "ep_bsp.h"
 
 #include <openthread/udp.h>
 
@@ -35,20 +35,20 @@ static void udp_receive(void *context, otMessage *message, const otMessageInfo *
     NRF_LOG_INFO("UDP received data: %d\r\n", buf[0]);
     if (buf[0] & 1)
     {
-        bsp_board_led_on(BSP_BOARD_LED_1);
+        ep_bsp_output_1_on();
     }
     else
     {
-        bsp_board_led_off(BSP_BOARD_LED_1);
+        ep_bsp_output_1_off();
     }
 
     if (buf[0] & 2)
     {
-        bsp_board_led_on(BSP_BOARD_LED_3);
+        ep_bsp_output_2_on();
     }
     else
     {
-        bsp_board_led_off(BSP_BOARD_LED_3);
+        ep_bsp_output_2_off();
     }
 
 exit:

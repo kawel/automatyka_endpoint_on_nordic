@@ -11,6 +11,7 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 # Source files common to all targets
 SRC_FILES += \
   $(PROJ_DIR)/main.c \
+  $(PROJ_DIR)/ep_bsp.c \
   $(PROJ_DIR)/ep_cfg.c \
   $(PROJ_DIR)/ep_udp.c \
   $(PROJ_DIR)/ep_coap.c \
@@ -260,8 +261,6 @@ flash: $(OUTPUT_DIRECTORY)/nrf52840_xxaa.hex
 	@echo Flashing: $<
 	nrfjprog --program $< -f nrf52 --sectorerase
 	nrfjprog --reset -f nrf52
-#       nrfjprog --snr 683377493 --program $< -f nrf52 --sectorerase
-#       nrfjprog --snr 683377493 --reset -f nrf52
 
 # Flash softdevice
 flash_softdevice:
@@ -271,6 +270,5 @@ flash_softdevice:
 
 erase:
 	nrfjprog --eraseall -f nrf52
-#       nrfjprog --snr 683377493 --eraseall -f nrf52
 
 	

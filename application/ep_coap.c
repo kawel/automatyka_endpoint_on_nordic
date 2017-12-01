@@ -6,6 +6,7 @@
  */
 
 #include "ep_coap.h"
+#include "ep_bsp.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -14,7 +15,6 @@
 #include "version.h"
 
 #include "nrf_log.h"
-#include "boards.h"
 
 #include <openthread/coap.h>
 
@@ -107,15 +107,15 @@ static void req_hdl_default(void *aContext, otCoapHeader *aHeader, otMessage *aM
 
 static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
-    uint8_t led_state = 0;
+    uint8_t output_state = 0;
 
     NRF_LOG_INFO("EP resources: output callback\r\n");
 
     switch (otCoapHeaderGetCode(aHeader))
     {
         case OT_COAP_CODE_GET:
-            led_state = (bsp_board_led_state_get(BSP_BOARD_LED_3) << 1)
-                       | bsp_board_led_state_get(BSP_BOARD_LED_1);
+            output_state = (ep_bsp_output_2_state_get() << 1)
+                          | ep_bsp_output_1_state_get();
             break;
 
         case OT_COAP_CODE_DELETE:
@@ -129,24 +129,24 @@ static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMe
             uint16_t length = otMessageGetLength(aMessage) - otMessageGetOffset(aMessage);
             if (length == 1)
             {
-                otMessageRead(aMessage, otMessageGetOffset(aMessage), &led_state, length);
+                otMessageRead(aMessage, otMessageGetOffset(aMessage), &output_state, length);
 
-                if (led_state & 1)
+                if (output_state & 1)
                 {
-                    bsp_board_led_on(BSP_BOARD_LED_1);
+                    ep_bsp_output_1_on();
                 }
                 else
                 {
-                    bsp_board_led_off(BSP_BOARD_LED_1);
+                    ep_bsp_output_1_off();
                 }
 
-                if (led_state & 2)
+                if (output_state & 2)
                 {
-                    bsp_board_led_on(BSP_BOARD_LED_3);
+                    ep_bsp_output_2_on();
                 }
                 else
                 {
-                    bsp_board_led_off(BSP_BOARD_LED_3);
+                    ep_bsp_output_2_off();
                 }
             }
         }
@@ -157,7 +157,7 @@ static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMe
             return;
     }
 
-    send_response(aContext, aHeader, aMessageInfo, (char *)&led_state, sizeof(led_state));
+    send_response(aContext, aHeader, aMessageInfo, (char *)&output_state, sizeof(output_state));
 }
 
 // Only GET method is available. Currently in this sample code reads state of the LED pins.
@@ -172,8 +172,8 @@ static void req_hdl_input(void *aContext, otCoapHeader *aHeader, otMessage *aMes
     switch (otCoapHeaderGetCode(aHeader))
     {
         case OT_COAP_CODE_GET:
-            sprintf(input_state, "LED_0: %s, LED_1: %s", bsp_board_led_state_get(BSP_BOARD_LED_1) == true ? "On" : "Off",
-                                                         bsp_board_led_state_get(BSP_BOARD_LED_3) == true ? "On" : "Off");
+            sprintf(input_state, "LED_0: %s, LED_1: %s", ep_bsp_output_1_state_get() == true ? "On" : "Off",
+                                                         ep_bsp_output_2_state_get() == true ? "On" : "Off");
             break;
 
         case OT_COAP_CODE_DELETE:
