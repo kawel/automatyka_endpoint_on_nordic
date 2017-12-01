@@ -236,6 +236,8 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 {
     ret_code_t err_code;
 
+    NRF_LOG_INFO("  pm_evt_handler: %d\r\n", (uint32_t)p_evt->evt_id);
+
     switch (p_evt->evt_id)
     {
         case PM_EVT_BONDED_PEER_CONNECTED:
@@ -414,6 +416,9 @@ static void gap_params_init(void)
     err_code = sd_ble_gap_device_name_set(&sec_mode,
                                           (const uint8_t *) DEVICE_NAME,
                                           strlen(DEVICE_NAME));
+    APP_ERROR_CHECK(err_code);
+    
+    err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_GENERIC_KEYRING);
     APP_ERROR_CHECK(err_code);
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
@@ -689,6 +694,8 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
  */
 static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
 {
+    ble_conn_state_on_ble_evt(p_ble_evt);
+    pm_on_ble_evt(p_ble_evt);	
     ble_conn_params_on_ble_evt(p_ble_evt);
     nrf_ble_gatt_on_ble_evt(&m_gatt, p_ble_evt);
     ble_nus_on_ble_evt(&m_nus, p_ble_evt);
@@ -708,6 +715,15 @@ static void ble_evt_dispatch(ble_evt_t * p_ble_evt)
  */
 static void sys_evt_dispatch(uint32_t sys_evt)
 {
+    // Dispatch the system event to the fstorage module, where it will be
+    // dispatched to the Flash Data Storage (FDS) module.
+    fs_sys_event_handler(sys_evt);
+
+    // Dispatch to the Advertising module last, since it will check if there are any
+    // pending flash operations in fstorage. Let fstorage process system events first,
+    // so that it can report correctly to the Advertising module.
+    ble_advertising_on_sys_evt(sys_evt);
+    
     // Dispatch nRF driver clock events.
     nrf_drv_clock_on_soc_event(sys_evt);
 
@@ -910,8 +926,7 @@ static void bsp_event_handler(bsp_event_t event)
 			NRF_LOG_INFO("Button pushed.\r\n");
 			if((adv_state_on == false) && (conn_state_on == false))
 			{
-			    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-			    APP_ERROR_CHECK(err_code);
+				advertising_start(false);
 			}
             ex_light_unicast();
             break;
@@ -1053,8 +1068,8 @@ int main(void)
     
     NRF_LOG_INFO("Blinky Started!\r\n");
 
-    err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
-    APP_ERROR_CHECK(err_code);
+    advertising_start(erase_bonds);
+
 
     // Enter main loop.
     for (;;)
