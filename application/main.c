@@ -141,19 +141,16 @@ static uint16_t                         m_ble_nus_max_data_len = BLE_GATT_ATT_MT
 static bool                             adv_state_on;                               /**< Status indicating that advertising is turned on. */
 static bool                             conn_state_on;                              /**< Status indicating that device is connected. */
 
-#ifdef BONDING
 static pm_peer_id_t   m_peer_id;                                                    /**< Device reference handle to the current bonded central. */
 static pm_peer_id_t   m_whitelist_peers[BLE_GAP_WHITELIST_ADDR_MAX_COUNT];  		/**< List of peers currently in the whitelist. */
 static uint32_t       m_whitelist_peer_cnt;                                 		/**< Number of peers currently in the whitelist. */
 static bool           m_is_wl_changed;                                      		/**< Indicates if the whitelist has been changed since last time it has been updated in the Peer Manager. */
-#endif
 
 static otInstance *ot_instance = NULL;
 
 
 static void advertising_stopped(void);
 
-#ifdef BONDING
 /**@brief Fetch the list of peer manager peer IDs.
  *
  * @param[inout] p_peers   The buffer where to store the list of peer IDs.
@@ -236,7 +233,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 {
     ret_code_t err_code;
 
-    NRF_LOG_INFO("  pm_evt_handler: %d\r\n", (uint32_t)p_evt->evt_id);
+    //NRF_LOG_INFO("  pm_evt_handler: %d\r\n", (uint32_t)p_evt->evt_id);
 
     switch (p_evt->evt_id)
     {
@@ -381,7 +378,6 @@ static void peer_manager_init(void)
     err_code = pm_register(pm_evt_handler);
     APP_ERROR_CHECK(err_code);
 }
-#endif //BONDING
 
 /**@brief Function for assert macro callback.
  *
@@ -606,12 +602,6 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             conn_state_on = false;
             NRF_LOG_INFO("Disconnected\r\n");
             break; // BLE_GAP_EVT_DISCONNECTED
-
-        case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-            // Pairing not supported
-            err_code = sd_ble_gap_sec_params_reply(m_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
-            APP_ERROR_CHECK(err_code);
-            break; // BLE_GAP_EVT_SEC_PARAMS_REQUEST
 
          case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
         {
@@ -1061,10 +1051,9 @@ int main(void)
     ep_cfg_init();
     ep_coap_init(ot_instance);
     ep_udp_start(ot_instance);
-    
-#ifdef BONDING    
+      
     peer_manager_init();
-#endif
+
     
     NRF_LOG_INFO("Blinky Started!\r\n");
 
