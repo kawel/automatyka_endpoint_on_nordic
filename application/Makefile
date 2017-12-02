@@ -16,6 +16,7 @@ SRC_FILES += \
   $(PROJ_DIR)/ep_udp.c \
   $(PROJ_DIR)/ep_coap.c \
   $(PROJ_DIR)/ex_light.c \
+  $(PROJ_DIR)/ble/ep_ble_main.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_frontend.c \
   $(SDK_ROOT)/components/boards/boards.c \
@@ -74,6 +75,7 @@ SRC_FILES += \
 # Include folders common to all targets
 INC_FOLDERS += \
   $(PROJ_DIR)/config \
+  $(PROJ_DIR)/ble \
   $(SDK_ROOT)/components/drivers_nrf/usbd \
   $(SDK_ROOT)/components/libraries/usbd/class/hid \
   $(SDK_ROOT)/components/libraries/gpiote \
