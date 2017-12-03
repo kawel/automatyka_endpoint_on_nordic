@@ -28,6 +28,7 @@
 #include "fstorage.h"
 
 #include "../ep_bsp.h"
+#include "ep_ble_main.h"
 
 
 #define CONN_CFG_TAG                    1                                           /**< A tag that refers to the BLE stack configuration we set with @ref sd_ble_cfg_set. Default tag is @ref BLE_CONN_CFG_TAG_DEFAULT. */
@@ -65,7 +66,15 @@
 #define SEC_PARAM_MIN_KEY_SIZE           7                                           /**< Minimum encryption key size. */
 #define SEC_PARAM_MAX_KEY_SIZE           16 
 
-#define BONDING
+#ifdef BLE_LOGGING
+	#define EP_BLE_LOG_INFO( ... ) 	    do{      \
+										  NRF_LOG_INFO("EP BLE: " __VA_ARGS__); \
+										  }while(0)
+#else
+	#define EP_BLE_LOG_INFO( ... ) 	    do{      \
+										  }while(0)
+#endif //BLE_LOGGING
+
 
 static ble_nus_t                        m_nus;                                      /**< Structure to identify the Nordic UART Service. */
 static uint16_t                         m_conn_handle = BLE_CONN_HANDLE_INVALID;    /**< Handle of the current connection. */
@@ -83,6 +92,8 @@ static bool           m_is_wl_changed;                                      		/*
 
 
 static void advertising_stopped(void);
+
+
 
 /**@brief Fetch the list of peer manager peer IDs.
  *
@@ -115,7 +126,7 @@ static void delete_bonds(void)
 {
     ret_code_t err_code;
 
-    NRF_LOG_INFO("Erase bonds!\r\n");
+    EP_BLE_LOG_INFO("Erase bonds!\r\n");
 
     err_code = pm_peers_delete();
     APP_ERROR_CHECK(err_code);
@@ -166,18 +177,18 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 {
     ret_code_t err_code;
 
-    //NRF_LOG_INFO("  pm_evt_handler: %d\r\n", (uint32_t)p_evt->evt_id);
+    //EP_BLE_LOG_INFO("  pm_evt_handler: %d\r\n", (uint32_t)p_evt->evt_id);
 
     switch (p_evt->evt_id)
     {
         case PM_EVT_BONDED_PEER_CONNECTED:
         {
-            NRF_LOG_INFO("Connected to a previously bonded device.\r\n");
+            EP_BLE_LOG_INFO("Connected to a previously bonded device.\r\n");
         } break;
 
         case PM_EVT_CONN_SEC_SUCCEEDED:
         {
-            NRF_LOG_INFO("Connection secured: role: %d, conn_handle: 0x%x, procedure: %d.\r\n",
+            EP_BLE_LOG_INFO("Connection secured: role: %d, conn_handle: 0x%x, procedure: %d.\r\n",
                          ble_conn_state_role(p_evt->conn_handle),
                          p_evt->conn_handle,
                          p_evt->params.conn_sec_succeeded.procedure);
@@ -187,8 +198,8 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
             // Note: You should check on what kind of white list policy your application should use.
             if (p_evt->params.conn_sec_succeeded.procedure == PM_LINK_SECURED_PROCEDURE_BONDING)
             {
-                NRF_LOG_INFO("New Bond, add the peer to the whitelist if possible\r\n");
-                NRF_LOG_INFO("\tm_whitelist_peer_cnt %d, MAX_PEERS_WLIST %d\r\n",
+                EP_BLE_LOG_INFO("New Bond, add the peer to the whitelist if possible\r\n");
+                EP_BLE_LOG_INFO("\tm_whitelist_peer_cnt %d, MAX_PEERS_WLIST %d\r\n",
                                m_whitelist_peer_cnt + 1,
                                BLE_GAP_WHITELIST_ADDR_MAX_COUNT);
 
@@ -392,12 +403,12 @@ static void led_write_handler(uint16_t conn_handle, ble_lbs_t * p_lbs, uint8_t l
     if (led_state)
     {
         ep_bsp_output_1_on();
-        NRF_LOG_INFO("Received LED ON!\r\n");
+        EP_BLE_LOG_INFO("Received LED ON!\r\n");
     }
     else
     {
         ep_bsp_output_1_off();
-        NRF_LOG_INFO("Received LED OFF!\r\n");
+        EP_BLE_LOG_INFO("Received LED OFF!\r\n");
     }
 }
 
@@ -491,13 +502,13 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
-        	NRF_LOG_INFO("Advertising start\r\n");
+        	EP_BLE_LOG_INFO("Advertising start\r\n");
         	adv_state_on = true;        	
             err_code = ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_ADVERTISING);
             APP_ERROR_CHECK(err_code);
             break;
         case BLE_ADV_EVT_IDLE:
-            NRF_LOG_INFO("Advertising Idle\r\n");
+            EP_BLE_LOG_INFO("Advertising Idle\r\n");
 			advertising_stopped();				
 //            err_code = ble_advertising_start(BLE_ADV_MODE_FAST);
 //            APP_ERROR_CHECK(err_code);
@@ -525,7 +536,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             conn_state_on = true;
             advertising_stopped();
 
-            NRF_LOG_INFO("Connected\r\n");
+            EP_BLE_LOG_INFO("Connected\r\n");
             break; // BLE_GAP_EVT_CONNECTED
 
         case BLE_GAP_EVT_DISCONNECTED:
@@ -533,7 +544,7 @@ static void on_ble_evt(ble_evt_t * p_ble_evt)
             APP_ERROR_CHECK(err_code);
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
             conn_state_on = false;
-            NRF_LOG_INFO("Disconnected\r\n");
+            EP_BLE_LOG_INFO("Disconnected\r\n");
             break; // BLE_GAP_EVT_DISCONNECTED
 
          case BLE_GAP_EVT_DATA_LENGTH_UPDATE_REQUEST:
@@ -693,7 +704,7 @@ void gatt_evt_handler(nrf_ble_gatt_t * p_gatt, const nrf_ble_gatt_evt_t * p_evt)
     if ((m_conn_handle == p_evt->conn_handle) && (p_evt->evt_id == NRF_BLE_GATT_EVT_ATT_MTU_UPDATED))
     {
         m_ble_nus_max_data_len = p_evt->params.att_mtu_effective - OPCODE_LENGTH - HANDLE_LENGTH;
-        NRF_LOG_INFO("Data len is set to 0x%X(%d)\r\n", m_ble_nus_max_data_len, m_ble_nus_max_data_len);
+        EP_BLE_LOG_INFO("Data len is set to 0x%X(%d)\r\n", m_ble_nus_max_data_len, m_ble_nus_max_data_len);
     }
     NRF_LOG_DEBUG("ATT MTU exchange completed. central 0x%x peripheral 0x%x\r\n", p_gatt->att_mtu_desired_central, p_gatt->att_mtu_desired_periph);
 }
@@ -748,7 +759,7 @@ static void advertising_init(void)
  */
 static void advertising_stopped(void)
 {
-	NRF_LOG_INFO("Advertising end\r\n");
+	EP_BLE_LOG_INFO("Advertising end\r\n");
 	if (conn_state_on == false)
 	{
 	    ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_IDLE);
