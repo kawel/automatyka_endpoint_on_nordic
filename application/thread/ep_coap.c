@@ -18,6 +18,16 @@
 
 #include <openthread/coap.h>
 
+
+#ifdef EP_COAP_LOGGING
+    #define EP_COAP_LOG_INFO(...)   NRF_LOG_INFO("EP COAP: " __VA_ARGS__)
+    #define EP_COAP_LOG_ERROR(...)  NRF_LOG_ERROR("EP COAP: " __VA_ARGS__)
+#else
+    #define EP_COAP_LOG_INFO(...)
+    #define EP_COAP_LOG_ERROR(...)
+#endif
+
+
 static void req_hdl_default(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
 static void req_hdl_input(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo);
@@ -61,36 +71,36 @@ static otCoapResource res_version = {
 
 int ep_coap_init(otInstance *aInstance)
 {
-    NRF_LOG_INFO("EP CoAP: add resources and start server\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: add resources and start server\r\n");
 
     // add resources to the server
     res_output.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_output));
-    NRF_LOG_INFO("EP CoAP: output added\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: output added\r\n");
 
     res_input.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_input));
-    NRF_LOG_INFO("EP CoAP: input added\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: input added\r\n");
 
     res_status.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_status));
-    NRF_LOG_INFO("EP CoAP: status added\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: status added\r\n");
 
     res_version.mContext = aInstance;
     SuccessOrExit(otCoapAddResource(aInstance, &res_version));
-    NRF_LOG_INFO("EP CoAP: version added\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: version added\r\n");
 
     otCoapSetDefaultHandler(aInstance, req_hdl_default, NULL);
-    NRF_LOG_INFO("EP CoAP: default handler added\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: default handler added\r\n");
 
     // start server
     SuccessOrExit(otCoapStart(aInstance, OT_DEFAULT_COAP_PORT));
-    NRF_LOG_INFO("EP CoAP: Started\r\n");
+    EP_COAP_LOG_INFO("EP CoAP: Started\r\n");
 
     return 0;
 
 exit:
-    NRF_LOG_INFO("EP CoAP: Failed\r\n");
+    EP_COAP_LOG_ERROR("EP CoAP: Failed\r\n");
     return -1;
 }
 
@@ -102,14 +112,14 @@ static void req_hdl_default(void *aContext, otCoapHeader *aHeader, otMessage *aM
     (void)aMessage;
     (void)aMessageInfo;
 
-    NRF_LOG_INFO("Received CoAP message that does not match any request or resource\r\n");
+    EP_COAP_LOG_INFO("Received CoAP message that does not match any request or resource\r\n");
 }
 
 static void req_hdl_output(void *aContext, otCoapHeader *aHeader, otMessage *aMessage, const otMessageInfo *aMessageInfo)
 {
     uint8_t output_state = 0;
 
-    NRF_LOG_INFO("EP resources: output callback\r\n");
+    EP_COAP_LOG_INFO("EP resources: output callback\r\n");
 
     switch (otCoapHeaderGetCode(aHeader))
     {
@@ -167,7 +177,7 @@ static void req_hdl_input(void *aContext, otCoapHeader *aHeader, otMessage *aMes
     char input_state[25] = "";
     (void)aMessage;
 
-    NRF_LOG_INFO("EP resources: input callback\r\n");
+    EP_COAP_LOG_INFO("EP resources: input callback\r\n");
 
     switch (otCoapHeaderGetCode(aHeader))
     {
@@ -197,7 +207,7 @@ static void req_hdl_status(void *aContext, otCoapHeader *aHeader, otMessage *aMe
     char status[] = "Everything is fine";
     (void)aMessage;
 
-    NRF_LOG_INFO("EP resources: status callback\r\n");
+    EP_COAP_LOG_INFO("EP resources: status callback\r\n");
 
     switch (otCoapHeaderGetCode(aHeader))
     {
@@ -245,7 +255,7 @@ static void req_hdl_version(void *aContext, otCoapHeader *aHeader, otMessage *aM
     char version[50] = "";
     (void)aMessage;
 
-    NRF_LOG_INFO("EP resources: version callback\r\n");
+    EP_COAP_LOG_INFO("EP resources: version callback\r\n");
 
     switch (otCoapHeaderGetCode(aHeader))
     {
@@ -276,7 +286,7 @@ static void send_response(void *aContext, otCoapHeader *aHeader, const otMessage
     otMessage *responseMessage;
     otCoapCode responseCode = OT_COAP_CODE_EMPTY;
 
-    NRF_LOG_INFO("EP resources: send response\r\n");
+    EP_COAP_LOG_INFO("EP resources: send response\r\n");
 
     if ((otCoapHeaderGetType(aHeader) == OT_COAP_TYPE_CONFIRMABLE) || otCoapHeaderGetCode(aHeader) == OT_COAP_CODE_GET)
     {
@@ -312,11 +322,11 @@ static void send_response(void *aContext, otCoapHeader *aHeader, const otMessage
 exit:
     if (error != OT_ERROR_NONE && responseMessage != NULL)
     {
-        NRF_LOG_INFO("EP resources: send response Failed\r\n");
+        EP_COAP_LOG_INFO("EP resources: send response Failed\r\n");
         otMessageFree(responseMessage);
     }
     else if (responseCode >= OT_COAP_CODE_RESPONSE_MIN)
     {
-        NRF_LOG_INFO("EP resources: response sent successfully\r\n");
+        EP_COAP_LOG_INFO("EP resources: response sent successfully\r\n");
     }
 }

@@ -72,14 +72,14 @@
 #include "nrf_drv_clock.h"
 
 #include <openthread/openthread.h>
-#include <openthread/cli.h>
 #include <openthread/platform/platform.h>
 #include <openthread/platform/platform-softdevice.h>
 
-#include "ep_cfg.h"
-#include "ep_udp.h"
+#include "thread/ep_thread.h"
+#include "thread/ep_cfg.h"
+#include "thread/ep_udp.h"
 #include "ep_bsp.h"
-#include "ep_coap.h"
+#include "thread/ep_coap.h"
 #include "ex_light.h"
 #include "ble/ep_ble_main.h"
 
@@ -121,49 +121,6 @@ static void power_manage(void)
 {
     uint32_t err_code = sd_app_evt_wait();
     APP_ERROR_CHECK(err_code);
-}
-
-
-
-/***************************************************************************************************
- * @section State change handling.
- **************************************************************************************************/
-
-static void handle_role_change(void * p_context, otDeviceRole role)
-{
-    switch(role)
-    {
-        case OT_DEVICE_ROLE_CHILD:
-        case OT_DEVICE_ROLE_ROUTER:
-        case OT_DEVICE_ROLE_LEADER:
-            ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_CONNECTED);
-            break;
-
-        case OT_DEVICE_ROLE_DISABLED:
-            ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_DISABLED);
-            break;
-
-        case OT_DEVICE_ROLE_DETACHED:
-        default:
-            ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_DETACHED);
-            ex_light_set_peer_address_unspecified();
-            break;
-    }
-}
-
-void state_changed_callback(uint32_t flags, void * p_context)
-{
-    if (flags & OT_CHANGED_THREAD_ROLE)
-    {
-        handle_role_change(p_context, otThreadGetDeviceRole(p_context));
-    }
-
-    if (flags & OT_CHANGED_THREAD_PARTITION_ID)
-    {
-        ex_light_set_peer_address_unspecified();
-    }
-
-    NRF_LOG_INFO("State changed! Flags: 0x%08x Current role: %d\r\n", flags, otThreadGetDeviceRole(p_context));
 }
 
 
@@ -225,45 +182,6 @@ static void buttons_leds_init(bool * p_erase_bonds)
     *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 }
 
-
-/***************************************************************************************************
- * @section Initialization
- **************************************************************************************************/
-
-static void thread_init(void)
-{
-    otInstance *p_instance;
-
-    PlatformInit(0, NULL);
-
-    p_instance = otInstanceInit();
-    assert(p_instance);
-
-    otCliUartInit(p_instance);
-
-    NRF_LOG_INFO("Thread version: %s\r\n", (uint32_t)otGetVersionString());
-    NRF_LOG_INFO("Network name:   %s\r\n", (uint32_t)otThreadGetNetworkName(p_instance));
-
-    assert(otSetStateChangedCallback(p_instance, &state_changed_callback, p_instance) == OT_ERROR_NONE);
-    assert(otIp6SetEnabled(p_instance, true) == OT_ERROR_NONE);
-
-    if (otDatasetIsCommissioned(p_instance))
-    {
-        NRF_LOG_INFO("Active Operational Dataset: Valid network present\r\n");
-        assert(otThreadSetEnabled(p_instance, true) == OT_ERROR_NONE);
-    }
-    else
-    {
-        NRF_LOG_INFO("Active Operational Dataset: No Valid network present. Load default values.\r\n");
-        ep_bsp_indication_thread_set(EP_BSP_INDICATE_THREAD_DISABLED);
-    }
-
-    NRF_LOG_INFO("Thread channel: %d\r\n", otLinkGetChannel(p_instance));
-    NRF_LOG_INFO("Thread PANID: 0x%X\r\n", otLinkGetPanId(p_instance));
-
-    ot_instance = p_instance;
-}
-
 /***************************************************************************************************
  * @section Main
  **************************************************************************************************/
@@ -284,7 +202,7 @@ int main(void)
     appble_init(sys_evt_dispatch);
     
     // Thread initialization
-    thread_init();
+    ot_instance = ep_thread_init();
     ex_light_init(ot_instance);
     ep_cfg_init();
     ep_coap_init(ot_instance);

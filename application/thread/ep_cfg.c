@@ -20,6 +20,15 @@
 #include "nfc_ndef_record_parser.h"
 
 
+#ifdef EP_CFG_LOGGING
+    #define EP_CFG_LOG_INFO(...)   NRF_LOG_INFO("EP CFG: " __VA_ARGS__)
+    #define EP_CFG_LOG_ERROR(...)  NRF_LOG_ERROR("EP CFG: " __VA_ARGS__)
+#else
+    #define EP_CFG_LOG_INFO(...)
+    #define EP_CFG_LOG_ERROR(...)
+#endif
+
+
 #define KIWI_NDEF_FILE_SIZE           128
 #define TAG_TYPE_4_NLEN_FIELD_SIZE    2
 
@@ -60,11 +69,11 @@ static void nfc_callback(void          * context,
     switch (event)
     {
         case NFC_T4T_EVENT_FIELD_ON:
-            //NRF_LOG_INFO("NFC T4T FIELD ON\r\n");
+            //EP_CFG_LOG_INFO("NFC T4T FIELD ON\r\n");
             break;
 
         case NFC_T4T_EVENT_FIELD_OFF:
-            //NRF_LOG_INFO("NFC T4T FIELD OFF\r\n");
+            //EP_CFG_LOG_INFO("NFC T4T FIELD OFF\r\n");
             break;
 
         case NFC_T4T_EVENT_NDEF_READ:
@@ -73,7 +82,7 @@ static void nfc_callback(void          * context,
         case NFC_T4T_EVENT_NDEF_UPDATED:
             if (dataLength != 0)
             {
-                NRF_LOG_INFO("NFC T4T NDEF UPDATED\r\n");
+                EP_CFG_LOG_INFO("NFC T4T NDEF UPDATED\r\n");
                 ndef_msb_buf_updated = true;
             }
             break;
@@ -85,7 +94,7 @@ static void nfc_callback(void          * context,
 
 static void nfc_init(void)
 {
-    NRF_LOG_INFO("NFC Type 4 Tag Initialization\r\n");
+    EP_CFG_LOG_INFO("NFC Type 4 Tag Initialization\r\n");
 
     /* Set up NFC */
     SuccessOrExit(nfc_t4t_setup(nfc_callback, NULL));
@@ -94,7 +103,7 @@ static void nfc_init(void)
     /* Start sensing NFC field */
     SuccessOrExit(nfc_t4t_emulation_start());
 
-    NRF_LOG_INFO("NFC T4T Emulation: Started.\r\n");
+    EP_CFG_LOG_INFO("NFC T4T Emulation: Started.\r\n");
 
 exit:
     return;
@@ -111,7 +120,7 @@ int ep_cfg_check_and_apply(otInstance *ot_instance)
 {
     if (true == ndef_msb_buf_updated)
     {
-        NRF_LOG_INFO("NDEF message buffer updated\r\n");
+        EP_CFG_LOG_INFO("NDEF message buffer updated\r\n");
 
         ndef_msb_buf_updated = false;
         ndef_process_data(ot_instance);
@@ -133,42 +142,42 @@ static void ndef_process_data(otInstance *ot_instance)
                                               ndef_msg_buf + TAG_TYPE_4_NLEN_FIELD_SIZE,
                                               &len))
         {
-            NRF_LOG_INFO("NDEF record: Correct\r\n");
+            EP_CFG_LOG_INFO("NDEF record: Correct\r\n");
             if (0 == ndef_validate_kiwi_data(&bin_pay_desc, &record_desc, &record_location))
             {
-                NRF_LOG_INFO("NDEF record: Valid KIWI data\r\n");
+                EP_CFG_LOG_INFO("NDEF record: Valid KIWI data\r\n");
 
                 otThreadSetEnabled(ot_instance, false);
-                NRF_LOG_INFO("Open Thread: DISABLED.\r\n");
+                EP_CFG_LOG_INFO("Open Thread: DISABLED.\r\n");
 
                 // OpenThread: Configure
                 SuccessOrExit(otThreadSetExtendedPanId(ot_instance, ep_cfg.ext_pan_id));
                 SuccessOrExit(otLinkSetPanId(ot_instance, REV16(ep_cfg.pan_id)));
-                NRF_LOG_INFO("Open Thread: ExtPanId, PanId set.\r\n");
+                EP_CFG_LOG_INFO("Open Thread: ExtPanId, PanId set.\r\n");
 
                 otMasterKey masterKey;
                 memcpy(masterKey.m8, ep_cfg.master_key, sizeof(ep_cfg.master_key));
                 SuccessOrExit(otThreadSetMasterKey(ot_instance, &masterKey));
-                NRF_LOG_INFO("Open Thread: MasterKey set.\r\n");
+                EP_CFG_LOG_INFO("Open Thread: MasterKey set.\r\n");
 
                 VerifyOrExit((ep_cfg.channel_id >= 11) && (ep_cfg.channel_id <= 26));
                 SuccessOrExit(otLinkSetChannel(ot_instance, ep_cfg.channel_id));
-                NRF_LOG_INFO("Open Thread: Channel set.\r\n");
+                EP_CFG_LOG_INFO("Open Thread: Channel set.\r\n");
 
                 // OpenThread: Start
                 SuccessOrExit(otThreadSetEnabled(ot_instance, true));
-                NRF_LOG_INFO("Open Thread: ENABLED.\r\n");
+                EP_CFG_LOG_INFO("Open Thread: ENABLED.\r\n");
 
-                NRF_LOG_INFO("NDEF record: KIWI configuration applied\r\n");
+                EP_CFG_LOG_INFO("NDEF record: KIWI configuration applied\r\n");
             }
             else
             {
-                NRF_LOG_INFO("NDEF record: Invalid KIWI data\r\n");
+                EP_CFG_LOG_INFO("NDEF record: Invalid KIWI data\r\n");
             }
         }
         else
         {
-            NRF_LOG_INFO("NDEF record: Invalid\r\n");
+            EP_CFG_LOG_INFO("NDEF record: Invalid\r\n");
         }
 
 exit:

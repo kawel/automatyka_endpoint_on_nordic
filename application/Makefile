@@ -11,10 +11,11 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 # Source files common to all targets
 SRC_FILES += \
   $(PROJ_DIR)/main.c \
+  $(PROJ_DIR)/thread/ep_thread.c \
   $(PROJ_DIR)/ep_bsp.c \
-  $(PROJ_DIR)/ep_cfg.c \
-  $(PROJ_DIR)/ep_udp.c \
-  $(PROJ_DIR)/ep_coap.c \
+  $(PROJ_DIR)/thread/ep_cfg.c \
+  $(PROJ_DIR)/thread/ep_udp.c \
+  $(PROJ_DIR)/thread/ep_coap.c \
   $(PROJ_DIR)/ex_light.c \
   $(PROJ_DIR)/ble/ep_ble_main.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
@@ -74,7 +75,9 @@ SRC_FILES += \
   
 # Include folders common to all targets
 INC_FOLDERS += \
+  $(PROJ_DIR) \
   $(PROJ_DIR)/config \
+  $(PROJ_DIR)/thread \
   $(PROJ_DIR)/ble \
   $(SDK_ROOT)/components/drivers_nrf/usbd \
   $(SDK_ROOT)/components/libraries/usbd/class/hid \
@@ -198,6 +201,7 @@ LIB_FILES += \
   $(SDK_ROOT)/components/nfc/t4t_lib/nfc_t4t_lib_gcc.a \
 
 # C flags common to all targets
+CFLAGS += -DUSE_APP_CONFIG
 CFLAGS += -DNFC_NDEF_RECORD_PARSER_ENABLED=1
 CFLAGS += -DVER_PROG_NAME=prototyp
 CFLAGS += -DAPP_UART_DRIVER_INSTANCE=1
@@ -265,10 +269,10 @@ TEMPLATE_PATH := $(SDK_ROOT)/components/toolchain/gcc
 include $(TEMPLATE_PATH)/Makefile.common
 
 ##Quick workaround for generation of the version_gen.h file required by version.c
-# $(OUTPUT_DIRECTORY)/nrf52840_xxaa_version.c.o: version_gen.h
+#$(OUTPUT_DIRECTORY)/nrf52840_xxaa_version.c.o: version_gen.h
 
-# version_gen.h:
-	# ../tools/gen_sw_ver.sh
+#version_gen.h:
+#	../tools/gen_sw_ver.sh
 
 $(foreach target, $(TARGETS), $(call define_target, $(target)))
 
