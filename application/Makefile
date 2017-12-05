@@ -10,14 +10,15 @@ $(OUTPUT_DIRECTORY)/nrf52840_xxaa.out: \
 
 # Source files common to all targets
 SRC_FILES += \
-  $(PROJ_DIR)/main.c \
-  $(PROJ_DIR)/thread/ep_thread.c \
-  $(PROJ_DIR)/ep_bsp.c \
-  $(PROJ_DIR)/thread/ep_cfg.c \
-  $(PROJ_DIR)/thread/ep_udp.c \
-  $(PROJ_DIR)/thread/ep_coap.c \
-  $(PROJ_DIR)/ex_light.c \
-  $(PROJ_DIR)/ble/ep_ble_main.c \
+  $(PROJ_DIR)/app_Src/main.c \
+  $(PROJ_DIR)/app_Src/ep_bsp.c \
+  $(PROJ_DIR)/app_Src/ex_light.c \
+  $(PROJ_DIR)/app_Src/thread/ep_thread.c \
+  $(PROJ_DIR)/app_Src/thread/ep_cfg.c \
+  $(PROJ_DIR)/app_Src/thread/ep_udp.c \
+  $(PROJ_DIR)/app_Src/thread/ep_coap.c \
+  $(PROJ_DIR)/app_Src/ble/ep_ble_main.c \
+  $(PROJ_DIR)/app_Src/version/version.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_frontend.c \
   $(SDK_ROOT)/components/boards/boards.c \
@@ -41,7 +42,6 @@ SRC_FILES += \
   $(SDK_ROOT)/components/libraries/bsp/bsp.c \
   $(SDK_ROOT)/components/libraries/bsp/bsp_btn_ble.c \
   $(SDK_ROOT)/components/libraries/bsp/bsp_nfc.c \
-  $(PROJ_DIR)/version/version.c \
   $(SDK_ROOT)/external/segger_rtt/RTT_Syscalls_GCC.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT.c \
   $(SDK_ROOT)/external/segger_rtt/SEGGER_RTT_printf.c \
@@ -76,9 +76,11 @@ SRC_FILES += \
 # Include folders common to all targets
 INC_FOLDERS += \
   $(PROJ_DIR) \
-  $(PROJ_DIR)/config \
-  $(PROJ_DIR)/thread \
-  $(PROJ_DIR)/ble \
+  $(PROJ_DIR)/app_Src \
+  $(PROJ_DIR)/app_Src/config \
+  $(PROJ_DIR)/app_Src/thread \
+  $(PROJ_DIR)/app_Src/ble \
+  $(PROJ_DIR)/app_Src/version \
   $(SDK_ROOT)/components/drivers_nrf/usbd \
   $(SDK_ROOT)/components/libraries/usbd/class/hid \
   $(SDK_ROOT)/components/libraries/gpiote \
@@ -188,7 +190,6 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/nfc/ndef/generic/record \
   $(SDK_ROOT)/components/nfc/ndef/generic/message \
   $(SDK_ROOT)/components/nfc/ndef/parser/record \
-  $(PROJ_DIR)/version \
 
 # Libraries common to all targets
 LIB_FILES += \
