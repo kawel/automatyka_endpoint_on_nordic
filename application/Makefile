@@ -18,6 +18,8 @@ SRC_FILES += \
   $(PROJ_DIR)/app_Src/thread/ep_udp.c \
   $(PROJ_DIR)/app_Src/thread/ep_coap.c \
   $(PROJ_DIR)/app_Src/ble/ep_ble_main.c \
+  $(PROJ_DIR)/app_Src/ble/ep_ble_adv.c \
+  $(PROJ_DIR)/app_Src/ble/ep_ble_pm.c \
   $(PROJ_DIR)/app_Src/version/version.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_backend_serial.c \
   $(SDK_ROOT)/components/libraries/log/src/nrf_log_frontend.c \

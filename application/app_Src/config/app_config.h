@@ -21,7 +21,7 @@
 // <4=> Debug
 #define NRF_LOG_DEFAULT_LEVEL 3
 
-#define BLE_LOGGING
+#define BLE_LOGGING               // If defined BLE logging information is turned on
 //#define EP_CFG_LOGGING
 //#define EP_UDP_LOGGING
 //#define EP_COAP_LOGGING
