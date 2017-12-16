@@ -40,8 +40,8 @@
 #define APP_ADV_INTERVAL                200                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 #define APP_ADV_TIMEOUT_IN_SECONDS      30                                          /**< The advertising timeout (in units of seconds). */
 
-//#define DEVICE_NAME_DEFAULT             "SmartConnect_defalut"                      /**< Name of device. Will be included in the advertising data. */
-//#define DEVICE_NAME_BUTTON              "SmartConnect_button_"                      /**< Name of device. Will be included in the advertising data. */
+static uint8_t advManufMsgDefault[] = {'d', 'e', 'f', 'a', 'u', 'l', 't'};
+static uint8_t advManufMsgButton[] = {'b', 'u', 't', 't', 'o', 'n', ' '};
 
 static bool                             adv_state_on;                               /**< Status indicating that advertising is turned on. */
 
@@ -50,24 +50,25 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt);
 
 
 
-
-
-
-/**@brief Function for initializing the Advertising functionality.
- */
-void appble_adv_init(void)
+void adv_init(uint8_t* manufacDataPtr, uint16_t manufacDataSize)
 {
     uint32_t               err_code;
     ble_advdata_t          advdata;
     ble_advdata_t          scanrsp;
+    ble_advdata_manuf_data_t manuf_data;
     ble_adv_modes_config_t options;
     ble_uuid_t      	   m_adv_uuids[] = {{BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}};  /**< Universally unique service identifier. */
+
+    manuf_data.company_identifier = 11;   // accidental value is used
+    manuf_data.data.size = manufacDataSize;
+    manuf_data.data.p_data = manufacDataPtr;
 
     // Build advertising data struct to pass into @ref ble_advertising_init.
     memset(&advdata, 0, sizeof(advdata));
     advdata.name_type          = BLE_ADVDATA_FULL_NAME;
     advdata.include_appearance = false;
     advdata.flags              = BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
+    advdata.p_manuf_specific_data = &manuf_data;
 
     memset(&scanrsp, 0, sizeof(scanrsp));
     scanrsp.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
@@ -85,6 +86,14 @@ void appble_adv_init(void)
 }
 
 
+/**@brief Function for initializing the Advertising functionality.
+ */
+void appble_adv_init(void)
+{
+	adv_init(advManufMsgDefault, sizeof(advManufMsgDefault));
+}
+
+
 /**@brief Function called when advertising is stopped.
  */
 void appble_adv_stopped(void)
@@ -97,6 +106,14 @@ void appble_adv_stopped(void)
 	    ep_bsp_indication_ble_set(EP_BSP_INDICATE_BLE_IDLE);
 	}
 	adv_state_on = false;
+}
+
+void appble_adv_chng_temp(void)
+{
+	EP_BLE_LOG_INFO("Advertising chng to Button\r\n");
+	sd_ble_gap_adv_stop();
+	adv_init(advManufMsgButton, sizeof(advManufMsgButton));
+	appble_adv_start();
 }
 
 /**@brief Function for starting advertising.

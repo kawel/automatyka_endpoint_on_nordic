@@ -23,4 +23,6 @@ void appble_adv_start(void);
 
 bool appble_adv_get_state(void);
 
+void appble_adv_chng_temp(void);
+
 #endif /* APP_SRC_BLE_EP_BLE_ADV_H_ */

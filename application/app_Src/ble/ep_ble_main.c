@@ -467,10 +467,7 @@ void appble_start(bool erase_bonds)
 
 void appble_adv_triggered(void)
 {
-	if( (appble_adv_get_state() == false) && (conn_state_on == false) )
-	{
-		appble_adv_start();
-	}
+	appble_adv_chng_temp();
 }
 
 void appble_disconn_triggered(void)
