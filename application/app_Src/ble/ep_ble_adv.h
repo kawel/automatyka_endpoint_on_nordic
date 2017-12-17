@@ -2,7 +2,7 @@
  * ep_ble_adv.h
  *
  *  Created on: 10.12.2017
- *      Author: Samsung
+ *      Author: Aleksander Demianowski
  */
 
 #ifndef APP_SRC_BLE_EP_BLE_ADV_H_
@@ -23,6 +23,6 @@ void appble_adv_start(void);
 
 bool appble_adv_get_state(void);
 
-void appble_adv_chng_temp(void);
+void appble_adv_chng_msg(void);
 
 #endif /* APP_SRC_BLE_EP_BLE_ADV_H_ */

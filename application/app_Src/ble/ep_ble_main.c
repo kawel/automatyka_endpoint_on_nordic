@@ -467,7 +467,7 @@ void appble_start(bool erase_bonds)
 
 void appble_adv_triggered(void)
 {
-	appble_adv_chng_temp();
+	appble_adv_chng_msg();
 }
 
 void appble_disconn_triggered(void)

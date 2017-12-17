@@ -2,7 +2,7 @@
  * ep_ble_adv.c
  *
  *  Created on: 10.12.2017
- *      Author: aledem
+ *      Author: Aleksnader Demianowski
  */
 
 
@@ -25,6 +25,7 @@
 #include "ble_advdata.h"
 #include "ble_advertising.h"
 #include "ble_conn_params.h"
+#include "app_timer.h"
 //services
 #include "ble_lbs.h"
 #include "ble_nus.h"
@@ -38,19 +39,50 @@
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 
 #define APP_ADV_INTERVAL                200                                         /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
-#define APP_ADV_TIMEOUT_IN_SECONDS      30                                          /**< The advertising timeout (in units of seconds). */
+#define APP_ADV_TIMEOUT_IN_SECONDS      0                                           /**< The advertising timeout (in units of seconds). */
 
-static uint8_t advManufMsgDefault[] = {'d', 'e', 'f', 'a', 'u', 'l', 't'};
-static uint8_t advManufMsgButton[] = {'b', 'u', 't', 't', 'o', 'n', ' '};
+#define ADVETISING_EXPIRY_TIME          60000									    /**< [ms] Period when advertising is change as a reaction for button pressing. */
+APP_TIMER_DEF(m_adv_chng_timer);
+
+static uint8_t advManufMsgDefault[] = {'d', 'e', 'f', 'a', 'u', 'l', 't'};          /**< Dafault message in the manufacturer part of advertising  */
+static uint8_t advManufMsgButton[]  = {'b', 'u', 't', 't', 'o', 'n', ' '};          /**< Temporary, for connection, message in the manufacturer part of advertising  */
 
 static bool                             adv_state_on;                               /**< Status indicating that advertising is turned on. */
 
 
 static void on_adv_evt(ble_adv_evt_t ble_adv_evt);
+static void adv_init(uint8_t* manufacDataPtr, uint16_t manufacDataSize);
+
+/**@brief Function for the Advertising-Change-Timer timeout handling.
+ *
+ * @details When timeout occurs, change advertising to the default state.
+ */
+static void adv_chng_timer_handler(void * p_context)
+{
+	EP_BLE_LOG_INFO("Timer end\r\n");
+	sd_ble_gap_adv_stop();
+	adv_init(advManufMsgDefault, sizeof(advManufMsgDefault));
+	appble_adv_start();
+}
 
 
+/**@brief Function for the Timer initialization.
+ *
+ * @details Initializes the timer module. This creates and starts application timers.
+ */
+static void timers_init(void)
+{
+    ret_code_t err_code;
 
-void adv_init(uint8_t* manufacDataPtr, uint16_t manufacDataSize)
+    // Initialize timer module.
+    err_code = app_timer_init();
+    APP_ERROR_CHECK(err_code);
+
+    err_code = app_timer_create(&m_adv_chng_timer, APP_TIMER_MODE_SINGLE_SHOT, adv_chng_timer_handler);
+    APP_ERROR_CHECK(err_code);
+}
+
+static void adv_init(uint8_t* manufacDataPtr, uint16_t manufacDataSize)
 {
     uint32_t               err_code;
     ble_advdata_t          advdata;
@@ -67,7 +99,7 @@ void adv_init(uint8_t* manufacDataPtr, uint16_t manufacDataSize)
     memset(&advdata, 0, sizeof(advdata));
     advdata.name_type          = BLE_ADVDATA_FULL_NAME;
     advdata.include_appearance = false;
-    advdata.flags              = BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
+    advdata.flags              = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
     advdata.p_manuf_specific_data = &manuf_data;
 
     memset(&scanrsp, 0, sizeof(scanrsp));
@@ -90,6 +122,7 @@ void adv_init(uint8_t* manufacDataPtr, uint16_t manufacDataSize)
  */
 void appble_adv_init(void)
 {
+	timers_init();
 	adv_init(advManufMsgDefault, sizeof(advManufMsgDefault));
 }
 
@@ -108,12 +141,21 @@ void appble_adv_stopped(void)
 	adv_state_on = false;
 }
 
-void appble_adv_chng_temp(void)
+/**@brief Function called to change advertising message.
+ */
+void appble_adv_chng_msg(void)
 {
+	uint32_t err_code;
+
 	EP_BLE_LOG_INFO("Advertising chng to Button\r\n");
 	sd_ble_gap_adv_stop();
 	adv_init(advManufMsgButton, sizeof(advManufMsgButton));
 	appble_adv_start();
+
+	err_code = app_timer_start(m_adv_chng_timer,
+							   APP_TIMER_TICKS(ADVETISING_EXPIRY_TIME),
+							   NULL);
+	APP_ERROR_CHECK(err_code);
 }
 
 /**@brief Function for starting advertising.

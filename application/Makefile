@@ -74,6 +74,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/ble/common/ble_conn_state.c \
   $(SDK_ROOT)/components/libraries/util/sdk_mapped_flags.c \
   $(SDK_ROOT)/components/nfc/ndef/parser/record/nfc_ndef_record_parser.c \
+  $(SDK_ROOT)/components/libraries/timer/app_timer.c \
   
 # Include folders common to all targets
 INC_FOLDERS += \
